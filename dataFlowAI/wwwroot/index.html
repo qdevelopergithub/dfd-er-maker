@@ -94,22 +94,38 @@
         <div class="grid grid-cols-1 gap-8">
             <!-- Input Section -->
             <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-                    <i class="fas fa-pencil-alt mr-2"></i>System Description
-                </h2>
-                <div class="relative">
-                    <textarea 
-                        id="systemDescription" 
-                        class="chat-input w-full h-48 focus:outline-none"
-                        placeholder="Enter your system description here... For example: 'A user management system that allows users to register, login, and update their profile information. The system stores user data in a database and sends email notifications for important events.'"
-                    ></textarea>
-                    <button 
-                        onclick="generateDocumentation()" 
-                        class="generate-button mt-4 w-full flex items-center justify-center"
-                        id="generateButton"
-                    >
+                <div class="flex justify-between w-100">
+                    <div>
+                        <h2 class="text-2xl font-semibold text-gray-800 mt-4">
+                            <i class="fas fa-pencil-alt mr-2"></i>System Description
+                        </h2>
+                    </div>
+                    <!-- Diagram Type Selector -->
+                    <div class="flex justify-start mb-4">
+                        <div class="flex flex-col">
+                            <div class="flex items-center">
+                                <label for="diagramType" class="mr-2 text-gray-700">Diagram Type:</label>
+                                <select id="diagramType" class="border border-gray-300 rounded-md px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="dfd">Data Flow Diagram (DFD)</option>
+                                    <option value="er">Entity Relationship Diagram (ERD)</option>
+                                    <option value="schema">Schema Diagram</option>
+                                </select>
+                            </div>
+                            <div class="text-sm text-gray-500 italic mt-1">
+                                Selected diagram type will be generated based on your description
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <textarea id="systemDescription"
+                              class="chat-input w-full h-48 focus:outline-none"
+                              placeholder="Enter your system description here... For example: 'A user management system that allows users to register, login, and update their profile information. The system stores user data in a database and sends email notifications for important events.'"></textarea>
+                    <button onclick="generateDocumentation()"
+                            class="generate-button mt-4 w-full flex items-center justify-center"
+                            id="generateButton">
                         <i class="fas fa-magic mr-2"></i>
-                        Generate DFD
+                        Generate <span id="generateButtonText">DFD</span>
                     </button>
                 </div>
             </div>
@@ -124,7 +140,7 @@
                             class="tab-button active" 
                             id="flowchartTab"
                         >
-                            <i class="fas fa-project-diagram mr-2"></i>Flowchart
+                            <i class="fas fa-project-diagram mr-2"></i><span id="diagramTabText">Data Flow Diagram</span>
                         </button>
                         <button 
                             onclick="switchTab('documentation')" 
@@ -132,6 +148,13 @@
                             id="documentationTab"
                         >
                             <i class="fas fa-file-alt mr-2"></i>Documentation
+                        </button>
+                        <button 
+                            onclick="showDFDCode()" 
+                            class="tab-button hidden" 
+                            id="dfdCodeBtn"
+                        >
+                            <i class="fas fa-code mr-2"></i>DFD Code
                         </button>
                     </nav>
                 </div>
@@ -162,35 +185,168 @@
                         <div class="preview-placeholder">Generated documentation will appear here</div>
                     </div>
                 </div>
+
+                <!-- DFD Code Content -->
+                <div id="dfdCodeContent" class="tab-content hidden">
+                    <div class="bg-white rounded-lg border border-gray-200">
+                        <div class="flex justify-between items-center p-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800">DFD Code</h3>
+                            <button onclick="copyDFDCode()" class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm">
+                                <i class="fas fa-copy mr-1"></i>Copy
+                            </button>
+                        </div>
+                        <pre id="dfdCodeDisplay" class="p-4 bg-gray-50 overflow-auto max-h-96 text-sm font-mono"></pre>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Initialize Mermaid
+        // Initialize Mermaid with all diagram types enabled
         mermaid.initialize({ 
             startOnLoad: true,
             theme: 'default',
             securityLevel: 'loose',
+            er: {
+                useMaxWidth: true,
+                titleTopMargin: 25,
+                diagramPadding: 8
+            },
             flowchart: {
                 useMaxWidth: true,
                 htmlLabels: true,
                 curve: 'basis'
+            },
+            class: {
+                useMaxWidth: true
             }
         });
 
-        function switchTab(tabName) {
-            // Update tab buttons
-            document.getElementById('flowchartTab').classList.toggle('active', tabName === 'flowchart');
-            document.getElementById('documentationTab').classList.toggle('active', tabName === 'documentation');
+        // Update generate button text based on selected diagram type
+        document.getElementById('diagramType').addEventListener('change', function() {
+            const diagramType = this.value;
+            const buttonText = {
+                'dfd': 'DFD',
+                'er': 'ERD',
+                'schema': 'Schema Diagram'
+            }[diagramType];
+            document.getElementById('generateButtonText').textContent = buttonText;
+            
+            // Update the tab text based on diagram type
+            const tabText = {
+                'dfd': 'Data Flow Diagram',
+                'er': 'Entity Relationship Diagram',
+                'schema': 'Schema Diagram'
+            }[diagramType];
+            document.getElementById('diagramTabText').textContent = tabText;
 
-            // Update content visibility
-            document.getElementById('flowchartContent').classList.toggle('hidden', tabName !== 'flowchart');
-            document.getElementById('documentationContent').classList.toggle('hidden', tabName !== 'documentation');
+            // Show/hide DFD Code button based on diagram type
+            const dfdCodeBtn = document.getElementById('showDFDCodeBtn');
+            dfdCodeBtn.classList.toggle('hidden', diagramType !== 'dfd');
+
+            // Show/hide DFD Code tab based on diagram type
+            const dfdCodeTab = document.getElementById('dfdCodeTab');
+            dfdCodeTab.classList.toggle('hidden', diagramType !== 'dfd');
+        });
+
+        function switchTab(tabName) {
+            try {
+                const tabs = {
+                    'flowchart': {
+                        tab: document.getElementById('flowchartTab'),
+                        content: document.getElementById('flowchartContent')
+                    },
+                    'documentation': {
+                        tab: document.getElementById('documentationTab'),
+                        content: document.getElementById('documentationContent')
+                    },
+                    'dfdcode': {
+                        tab: document.getElementById('dfdCodeBtn'),
+                        content: document.getElementById('dfdCodeContent')
+                    }
+                };
+
+                // Verify all elements exist
+                if (!tabs[tabName]?.tab || !tabs[tabName]?.content) {
+                    console.error(`Required elements for ${tabName} tab not found`);
+                    return;
+                }
+
+                // Remove active class from all tabs and hide content
+                Object.values(tabs).forEach(({ tab, content }) => {
+                    if (tab && content) {
+                        tab.classList.remove('active');
+                        content.classList.add('hidden');
+                    }
+                });
+
+                // Activate selected tab
+                tabs[tabName].tab.classList.add('active');
+                tabs[tabName].content.classList.remove('hidden');
+
+                // If switching to documentation tab, update documentation content
+                if (tabName === 'documentation') {
+                    updateDocumentationContent();
+                }
+            } catch (error) {
+                console.error('Error in switchTab:', error);
+            }
         }
+
+        function updateDocumentationContent() {
+            try {
+                const dfdDocResult = document.getElementById('dfdDocResult');
+                if (!dfdDocResult) return;
+
+                const diagramType = document.getElementById('diagramType').value;
+                const docData = window.lastGeneratedData?.documentation || window.lastGeneratedData?.dfdDoc;
+
+                if (!docData) {
+                    dfdDocResult.innerHTML = '<div class="preview-placeholder">No documentation available. Please generate documentation first.</div>';
+                    return;
+                }
+
+                let parsedDocData = docData;
+                if (typeof docData === 'string') {
+                    try {
+                        parsedDocData = JSON.parse(docData);
+                    } catch (error) {
+                        console.error('Documentation parse error:', error);
+                        dfdDocResult.innerHTML = '<div class="preview-placeholder">Error parsing documentation data.</div>';
+                        return;
+                    }
+                }
+
+                // Create HTML for the documentation based on diagram type
+                let docHtml = '';
+                switch(diagramType) {
+                    case 'dfd':
+                        docHtml = generateDFDDocHTML(parsedDocData);
+                        break;
+                    case 'er':
+                        docHtml = generateERDocHTML(parsedDocData);
+                        break;
+                    case 'schema':
+                        docHtml = generateSchemaDocHTML(parsedDocData);
+                        break;
+                    default:
+                        docHtml = '<div class="preview-placeholder">Unknown diagram type</div>';
+                }
+
+                dfdDocResult.innerHTML = docHtml;
+            } catch (error) {
+                console.error('Error updating documentation:', error);
+            }
+        }
+
+        // Add global variable to store the original mermaid code
+        let lastGeneratedMermaidCode = '';
 
         async function generateDocumentation() {
             const description = document.getElementById('systemDescription').value;
+            const diagramType = document.getElementById('diagramType').value;
+            
             if (!description) {
                 showNotification('Please enter a system description', 'error');
                 return;
@@ -203,145 +359,64 @@
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ description }),
+                    body: JSON.stringify({ 
+                        description,
+                        diagramType 
+                    }),
                 });
 
-                const data = await response.json();
-                console.log('Server response:', data);
+                let data;
+                try {
+                    const rawText = await response.text();
+                    data = JSON.parse(rawText);
+                    window.lastGeneratedData = data;
+                } catch (error) {
+                    throw new Error(`Failed to process server response: ${error.message}`);
+                }
 
                 if (!response.ok) {
                     throw new Error(data.details || data.error || 'Failed to generate documentation');
                 }
-                
-                // Update DFD
+
+                // Update diagram
                 const dfdResult = document.getElementById('dfdResult');
-                let mermaidCode = data.dfd;
-                console.log('Original DFD response:', mermaidCode);
-                
-                // Clean up the Mermaid code
+                if (!dfdResult) {
+                    throw new Error('DFD result container not found');
+                }
+
+                let mermaidCode = data.diagram || data.dfd;
                 if (typeof mermaidCode === 'string') {
                     mermaidCode = mermaidCode.replace(/```mermaid\n?/g, '').replace(/```/g, '').trim();
-                    if (!mermaidCode.startsWith('flowchart TD')) {
+                    if (diagramType === 'dfd' && !mermaidCode.toLowerCase().includes('flowchart')) {
                         mermaidCode = 'flowchart TD\n' + mermaidCode;
-                    }
-                    if (mermaidCode === 'flowchart TD') {
-                        mermaidCode = `flowchart TD
-    A[User] --> B(Process)
-    B --> C{{Data Store}}
-    C --> B
-    B --> A`;
                     }
                 }
 
-                // Create new Mermaid div
+                // Store the original mermaid code
+                lastGeneratedMermaidCode = mermaidCode;
+
                 const mermaidDiv = document.createElement('div');
                 mermaidDiv.className = 'mermaid';
                 mermaidDiv.textContent = mermaidCode;
                 
-                // Clear and update the container
                 dfdResult.innerHTML = '';
                 dfdResult.appendChild(mermaidDiv);
 
                 try {
-                    await mermaid.run({
-                        querySelector: '.mermaid'
-                    });
+                    await mermaid.init(undefined, '.mermaid');
                 } catch (error) {
                     console.error('Mermaid rendering error:', error);
                     dfdResult.innerHTML = `
                         <div class="text-red-500 mb-2">Error rendering diagram:</div>
-                        <div class="text-sm mb-2">${error.message || 'Unknown error'}</div>
+                        <div class="text-sm mb-2">${error.message}</div>
                         <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">${mermaidCode}</pre>
                     `;
                 }
 
-                // Update DFD Documentation
-                const dfdDocResult = document.getElementById('dfdDocResult');
-                try {
-                    let dfdDoc = data.dfdDoc;
-                    console.log('Raw DFD documentation:', dfdDoc);
-
-                    if (typeof dfdDoc === 'string') {
-                        try {
-                            dfdDoc = JSON.parse(dfdDoc);
-                        } catch (parseError) {
-                            console.error('Parse error:', parseError);
-                            throw new Error('Invalid DFD documentation format');
-                        }
-                    }
-
-                    if (!dfdDoc) {
-                        throw new Error('No DFD documentation received');
-                    }
-
-                    console.log('Parsed DFD documentation:', dfdDoc);
-
-                    // Create HTML for the documentation
-                    const docHtml = `
-                        <div class="doc-section">
-                            <h4>System Overview</h4>
-                            <div class="doc-item">${dfdDoc.systemOverview || 'No system overview available'}</div>
-                        </div>
-                        <div class="doc-section">
-                            <h4>Level 0 DFD Description</h4>
-                            <div class="doc-item">${dfdDoc.level0DFD || 'No Level 0 DFD description available'}</div>
-                        </div>
-                        <div class="doc-section">
-                            <h4>External Entities</h4>
-                            ${(dfdDoc.externalEntities || []).map(entity => `
-                                <div class="doc-item">
-                                    <strong>${entity.name || 'Unnamed Entity'}</strong>
-                                    <p>${entity.description || 'No description available'}</p>
-                                    <p><em>Interactions:</em> ${entity.interactions || 'No interactions specified'}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="doc-section">
-                            <h4>Processes</h4>
-                            ${(dfdDoc.processes || []).map(process => `
-                                <div class="doc-item">
-                                    <strong>${process.name || 'Unnamed Process'}</strong>
-                                    <p>${process.description || 'No description available'}</p>
-                                    <p><em>Inputs:</em> ${process.inputs || 'No inputs specified'}</p>
-                                    <p><em>Outputs:</em> ${process.outputs || 'No outputs specified'}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="doc-section">
-                            <h4>Data Stores</h4>
-                            ${(dfdDoc.dataStores || []).map(store => `
-                                <div class="doc-item">
-                                    <strong>${store.name || 'Unnamed Data Store'}</strong>
-                                    <p>${store.description || 'No description available'}</p>
-                                    <p><em>Data:</em> ${store.data || 'No data specified'}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="doc-section">
-                            <h4>Data Flows</h4>
-                            ${(dfdDoc.dataFlows || []).map(flow => `
-                                <div class="doc-item">
-                                    <strong>${flow.from || 'Unknown'} → ${flow.to || 'Unknown'}</strong>
-                                    <p>${flow.description || 'No description available'}</p>
-                                    <p><em>Data:</em> ${flow.data || 'No data specified'}</p>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="doc-section">
-                            <h4>System Boundaries</h4>
-                            <div class="doc-item">${dfdDoc.systemBoundaries || 'No system boundaries specified'}</div>
-                        </div>
-                    `;
-
-                    dfdDocResult.innerHTML = docHtml;
-                    console.log('Documentation HTML generated successfully');
-                } catch (error) {
-                    console.error('DFD Doc error:', error);
-                    dfdDocResult.innerHTML = `
-                        <div class="text-red-500 mb-2">Error displaying DFD documentation:</div>
-                        <div class="text-sm mb-2">${error.message}</div>
-                        <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto">${data.dfdDoc || 'No DFD documentation available'}</pre>
-                    `;
+                // Update DFD Code button visibility
+                const dfdCodeBtn = document.getElementById('dfdCodeBtn');
+                if (dfdCodeBtn) {
+                    dfdCodeBtn.classList.toggle('hidden', diagramType !== 'dfd');
                 }
 
                 showNotification('Documentation generated successfully!', 'success');
@@ -351,6 +426,134 @@
             } finally {
                 showLoadingState(false);
             }
+        }
+
+        function generateDFDDocHTML(dfdDoc) {
+            return `
+                <div class="doc-section">
+                    <h4>System Overview</h4>
+                    <div class="doc-item">${dfdDoc.systemOverview || 'No system overview available'}</div>
+                </div>
+                <div class="doc-section">
+                    <h4>Level 2 DFD Description</h4>
+                    <div class="doc-item">${dfdDoc.level2DFD || 'No Level 2 DFD description available'}</div>
+                </div>
+                <div class="doc-section">
+                    <h4>External Entities</h4>
+                    ${(dfdDoc.externalEntities || []).map(entity => `
+                        <div class="doc-item">
+                            <strong>${entity.name || 'Unnamed Entity'}</strong>
+                            <p>${entity.description || 'No description available'}</p>
+                            <p><em>Interactions:</em> ${entity.interactions || 'No interactions specified'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="doc-section">
+                    <h4>Processes</h4>
+                    ${(dfdDoc.processes || []).map(process => `
+                        <div class="doc-item">
+                            <strong>${process.name || 'Unnamed Process'}</strong>
+                            <p>${process.description || 'No description available'}</p>
+                            <p><em>Inputs:</em> ${process.inputs || 'No inputs specified'}</p>
+                            <p><em>Outputs:</em> ${process.outputs || 'No outputs specified'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="doc-section">
+                    <h4>Data Stores</h4>
+                    ${(dfdDoc.dataStores || []).map(store => `
+                        <div class="doc-item">
+                            <strong>${store.name || 'Unnamed Data Store'}</strong>
+                            <p>${store.description || 'No description available'}</p>
+                            <p><em>Data:</em> ${store.data || 'No data specified'}</p>
+                            <p><em>Access Patterns:</em> ${store.accessPatterns || 'No access patterns specified'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="doc-section">
+                    <h4>Data Flows</h4>
+                    ${(dfdDoc.dataFlows || []).map(flow => `
+                        <div class="doc-item">
+                            <strong>${flow.from || 'Unknown'} → ${flow.to || 'Unknown'}</strong>
+                            <p>${flow.description || 'No description available'}</p>
+                            <p><em>Data:</em> ${flow.data || 'No data specified'}</p>
+                            <p><em>Validations:</em> ${flow.validations || 'No validations specified'}</p>
+                            <p><em>Transformations:</em> ${flow.transformations || 'No transformations specified'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="doc-section">
+                    <h4>System Boundaries</h4>
+                    <div class="doc-item">${dfdDoc.systemBoundaries || 'No system boundaries specified'}</div>
+                </div>
+            `;
+        }
+
+        function generateERDocHTML(erDoc) {
+            return `
+                <div class="doc-section">
+                    <h4>System Overview</h4>
+                    <div class="doc-item">${erDoc.systemOverview || 'No system overview available'}</div>
+                </div>
+                <div class="doc-section">
+                    <h4>Entities</h4>
+                    ${(erDoc.entities || []).map(entity => `
+                        <div class="doc-item">
+                            <strong>${entity.name || 'Unnamed Entity'}</strong>
+                            <p>${entity.description || 'No description available'}</p>
+                            <p><em>Attributes:</em></p>
+                            <ul class="list-disc ml-4">
+                                ${(entity.attributes || []).map(attr => `
+                                    <li>${attr.name} (${attr.type})${attr.isPrimary ? ' - Primary Key' : ''}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="doc-section">
+                    <h4>Relationships</h4>
+                    ${(erDoc.relationships || []).map(rel => `
+                        <div class="doc-item">
+                            <strong>${rel.from || 'Unknown'} ${rel.type || '→'} ${rel.to || 'Unknown'}</strong>
+                            <p>${rel.description || 'No description available'}</p>
+                            <p><em>Cardinality:</em> ${rel.cardinality || 'Not specified'}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function generateSchemaDocHTML(schemaDoc) {
+            return `
+                <div class="doc-section">
+                    <h4>Database Overview</h4>
+                    <div class="doc-item">${schemaDoc.databaseOverview || 'No database overview available'}</div>
+                </div>
+                <div class="doc-section">
+                    <h4>Tables</h4>
+                    ${(schemaDoc.tables || []).map(table => `
+                        <div class="doc-item">
+                            <strong>${table.name || 'Unnamed Table'}</strong>
+                            <p>${table.description || 'No description available'}</p>
+                            <p><em>Columns:</em></p>
+                            <ul class="list-disc ml-4">
+                                ${(table.columns || []).map(col => `
+                                    <li>${col.name} (${col.type})${col.constraints ? ` - ${col.constraints}` : ''}</li>
+                                `).join('')}
+                            </ul>
+                            ${table.primaryKey ? `<p><em>Primary Key:</em> ${table.primaryKey}</p>` : ''}
+                            ${(table.foreignKeys || []).length > 0 ? `
+                                <p><em>Foreign Keys:</em></p>
+                                <ul class="list-disc ml-4">
+                                    ${table.foreignKeys.map(fk => `
+                                        <li>${fk.column} references ${fk.references}</li>
+                                    `).join('')}
+                                </ul>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
         function showNotification(message, type) {
@@ -370,7 +573,7 @@
                 button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
             } else {
                 button.disabled = false;
-                button.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate DFD';
+                button.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate <span id="generateButtonText">DFD</span>';
             }
         }
 
@@ -413,7 +616,8 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        description: document.getElementById('systemDescription').value 
+                        description: document.getElementById('systemDescription').value,
+                        diagramType: document.getElementById('diagramType').value
                     }),
                 });
 
@@ -435,6 +639,102 @@
                 showLoadingState(false);
             }
         }
+
+        function showDFDCode() {
+            try {
+                if (!lastGeneratedMermaidCode) {
+                    showNotification('Please generate a DFD diagram first', 'error');
+                    return;
+                }
+
+                const dfdCodeDisplay = document.getElementById('dfdCodeDisplay');
+                if (dfdCodeDisplay) {
+                    // Format the stored mermaid code
+                    const formattedCode = formatDFDCode(lastGeneratedMermaidCode);
+                    dfdCodeDisplay.textContent = formattedCode;
+                }
+
+                // Switch to DFD code tab
+                switchTab('dfdcode');
+            } catch (error) {
+                console.error('Error in showDFDCode:', error);
+                showNotification('Error showing DFD code', 'error');
+            }
+        }
+
+        function formatDFDCode(code) {
+            try {
+                // Split into lines and clean them
+                let lines = code.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+
+                // Ensure we have a header
+                const headerIndex = lines.findIndex(line => 
+                    line.toLowerCase().includes('flowchart') || 
+                    line.toLowerCase().includes('graph'));
+
+                if (headerIndex === -1) {
+                    lines.unshift('flowchart TD');
+                } else {
+                    // Move header to the beginning if it's not already there
+                    if (headerIndex > 0) {
+                        const header = lines.splice(headerIndex, 1)[0];
+                        lines.unshift(header);
+                    }
+                }
+
+                // Group connections by source node
+                const groups = new Map();
+                let currentNode = null;
+
+                lines.slice(1).forEach(line => { // Skip header
+                    if (line.includes('-->')) {
+                        const [source] = line.split('-->').map(part => part.trim());
+                        if (!groups.has(source)) {
+                            groups.set(source, []);
+                            currentNode = source;
+                        }
+                        groups.get(currentNode).push(line);
+                    }
+                });
+
+                // Format the output
+                let formattedLines = [lines[0]]; // Start with header
+
+                groups.forEach((connections, source) => {
+                    if (formattedLines.length > 1) {
+                        formattedLines.push(''); // Add blank line between groups
+                    }
+                    connections.forEach(conn => {
+                        formattedLines.push(conn.endsWith(';') ? conn : conn + ';');
+                    });
+                });
+
+                return formattedLines.join('\n');
+            } catch (error) {
+                console.error('Error formatting DFD code:', error);
+                return code;
+            }
+        }
+
+        function copyDFDCode() {
+            const codeDisplay = document.getElementById('dfdCodeDisplay');
+            if (codeDisplay) {
+                navigator.clipboard.writeText(codeDisplay.textContent).then(() => {
+                    showNotification('DFD code copied to clipboard!', 'success');
+                }).catch(() => {
+                    showNotification('Failed to copy code to clipboard', 'error');
+                });
+            }
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('dfdCodeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                hideDFDCode();
+            }
+        });
     </script>
 </body>
 </html> 

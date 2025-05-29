@@ -1,0 +1,96 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\.net\\GroupChats\\dfd-er-maker\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|d:\\.net\\groupchats\\dfd-er-maker\\dataflowai\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|solutionrelative:dataflowai\\wwwroot\\index.html||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|d:\\.net\\groupchats\\dfd-er-maker\\dataflowai\\controllers\\generatorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|solutionrelative:dataflowai\\controllers\\generatorcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|d:\\.net\\groupchats\\dfd-er-maker\\dataflowai\\services\\docxservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|solutionrelative:dataflowai\\services\\docxservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|d:\\.net\\groupchats\\dfd-er-maker\\dataflowai\\services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E91AA891-008C-4E2E-B125-4610B43E997A}|dataFlowAI\\dataFlowAI.csproj|solutionrelative:dataflowai\\services\\geminiservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 2,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "index.html",
+              "DocumentMoniker": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\wwwroot\\index.html",
+              "RelativeDocumentMoniker": "dataFlowAI\\wwwroot\\index.html",
+              "ToolTip": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\wwwroot\\index.html*",
+              "RelativeToolTip": "dataFlowAI\\wwwroot\\index.html*",
+              "ViewState": "AgIAAFwCAAAAAAAAAAAqwGsCAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2025-05-28T08:45:00.981Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "GeneratorController.cs",
+              "DocumentMoniker": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Controllers\\GeneratorController.cs",
+              "RelativeDocumentMoniker": "dataFlowAI\\Controllers\\GeneratorController.cs",
+              "ToolTip": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Controllers\\GeneratorController.cs",
+              "RelativeToolTip": "dataFlowAI\\Controllers\\GeneratorController.cs",
+              "ViewState": "AgIAAIQAAAAAAAAAAAArwJAAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T09:44:42.446Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "DocxService.cs",
+              "DocumentMoniker": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Services\\DocxService.cs",
+              "RelativeDocumentMoniker": "dataFlowAI\\Services\\DocxService.cs",
+              "ToolTip": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Services\\DocxService.cs",
+              "RelativeToolTip": "dataFlowAI\\Services\\DocxService.cs",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAgwE0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T09:06:32.704Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "GeminiService.cs",
+              "DocumentMoniker": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Services\\GeminiService.cs",
+              "RelativeDocumentMoniker": "dataFlowAI\\Services\\GeminiService.cs",
+              "ToolTip": "D:\\.net\\GroupChats\\dfd-er-maker\\dataFlowAI\\Services\\GeminiService.cs",
+              "RelativeToolTip": "dataFlowAI\\Services\\GeminiService.cs",
+              "ViewState": "AgIAAAcCAAAAAAAAAAAIwBcCAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-05-28T08:51:07.995Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

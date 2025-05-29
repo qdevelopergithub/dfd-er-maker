@@ -25,22 +25,35 @@ namespace dataFlowAI.Controllers
         {
             try
             {
-                _logger.LogInformation("Received request to generate documentation for: {Description}", request.Description);
+                _logger.LogInformation("Received request to generate {DiagramType} for: {Description}", 
+                    request.DiagramType, request.Description);
 
-                // Generate both DFD and DFD documentation
-                var dfdTask = await _geminiService.GenerateDFD(request.Description);
-                var dfdDocTask = await _geminiService.GenerateDFDDoc(request.Description);
+                string diagram;
+                string documentation;
 
-               
-                var dfd = dfdTask;
-                var dfdDoc = dfdDocTask;
+                switch (request.DiagramType?.ToLower())
+                {
+                    case "er":
+                        diagram = await _geminiService.GenerateERD(request.Description);
+                        documentation = await _geminiService.GenerateERDDoc(request.Description);
+                        break;
+                    case "schema":
+                        diagram = await _geminiService.GenerateSchemaD(request.Description);
+                        documentation = await _geminiService.GenerateSchemaDoc(request.Description);
+                        break;
+                    case "dfd":
+                    default:
+                        diagram = await _geminiService.GenerateDFD(request.Description);
+                        documentation = await _geminiService.GenerateDFDDoc(request.Description);
+                        break;
+                }
 
-                _logger.LogInformation("Successfully generated DFD and documentation");
+                _logger.LogInformation("Successfully generated {DiagramType} and documentation", request.DiagramType);
 
                 return Ok(new
                 {
-                    dfd = dfd,
-                    dfdDoc = dfdDoc
+                    diagram = diagram,
+                    documentation = documentation
                 });
             }
             catch (Exception ex)
@@ -55,35 +68,68 @@ namespace dataFlowAI.Controllers
         {
             try
             {
-                _logger.LogInformation("Generating DFD documentation for: {Description}", request.Description);
-                var dfdDoc = await _geminiService.GenerateDFDDoc(request.Description);
+                _logger.LogInformation("Generating {DiagramType} documentation for: {Description}", 
+                    request.DiagramType, request.Description);
+
+                string documentation;
+                string fileName;
+
+                switch (request.DiagramType?.ToLower())
+                {
+                    case "er":
+                        documentation = await _geminiService.GenerateERDDoc(request.Description);
+                        fileName = "er-documentation.docx";
+                        break;
+                    case "schema":
+                        documentation = await _geminiService.GenerateSchemaDoc(request.Description);
+                        fileName = "schema-documentation.docx";
+                        break;
+                    case "dfd":
+                    default:
+                        documentation = await _geminiService.GenerateDFDDoc(request.Description);
+                        fileName = "dfd-documentation.docx";
+                        break;
+                }
                 
-                _logger.LogInformation("Raw DFD documentation: {DfdDoc}", dfdDoc);
+                _logger.LogInformation("Raw documentation: {Documentation}", documentation);
 
                 // Clean up the response
-                var cleanedResponse = dfdDoc
+                var cleanedResponse = documentation
                     .Replace("```json", "")
                     .Replace("```", "")
                     .Trim();
 
-                _logger.LogInformation("Cleaned DFD documentation: {CleanedDoc}", cleanedResponse);
+                _logger.LogInformation("Cleaned documentation: {CleanedDoc}", cleanedResponse);
 
                 // Parse the JSON string into a dynamic object
-                JsonElement dfdDocObject;
+                JsonElement docObject;
                 try
                 {
-                    dfdDocObject = JsonSerializer.Deserialize<JsonElement>(cleanedResponse);
+                    docObject = JsonSerializer.Deserialize<JsonElement>(cleanedResponse);
                 }
                 catch (JsonException ex)
                 {
-                    _logger.LogError(ex, "Failed to parse DFD documentation JSON");
-                    return BadRequest(new { error = "Invalid JSON format in DFD documentation", details = ex.Message });
+                    _logger.LogError(ex, "Failed to parse documentation JSON");
+                    return BadRequest(new { error = "Invalid JSON format in documentation", details = ex.Message });
                 }
 
-                // Generate DOCX
-                var docxBytes = _docxService.GenerateDFDDocumentation(dfdDocObject);
+                // Generate DOCX based on diagram type
+                byte[] docxBytes;
+                switch (request.DiagramType?.ToLower())
+                {
+                    case "er":
+                        docxBytes = _docxService.GenerateERDocumentation(docObject);
+                        break;
+                    case "schema":
+                        docxBytes = _docxService.GenerateSchemaDocumentation(docObject);
+                        break;
+                    case "dfd":
+                    default:
+                        docxBytes = _docxService.GenerateDFDDocumentation(docObject);
+                        break;
+                }
 
-                return File(docxBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "dfd-documentation.docx");
+                return File(docxBytes, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", fileName);
             }
             catch (Exception ex)
             {
@@ -96,5 +142,6 @@ namespace dataFlowAI.Controllers
     public class GenerateRequest
     {
         public string Description { get; set; } = string.Empty;
+        public string? DiagramType { get; set; }
     }
 } 
