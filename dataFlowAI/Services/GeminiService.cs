@@ -12,7 +12,14 @@ namespace dataFlowAI.Services
 {
     public class GeminiService
     {
-        private readonly string _apiKey;
+        private readonly List<string> _apiKeys = new List<string>
+        {
+            "AIzaSyA9VxC-PQ7uOI1xycf3sbrlqtwDtgxiQkw",
+            "AIzaSyB4FP0bp8R5aE5Oh_p0CBlE3SSEtcqP1-M",
+            "AIzaSyDnss4H0CbZJI9u0oZSB-ezDzZPxH2My0A"
+        };
+        private int _currentKeyIndex = 0;
+        private readonly object _keyLock = new object();
         private readonly HttpClient _httpClient;
         private readonly ILogger<GeminiService> _logger;
 
@@ -20,15 +27,27 @@ namespace dataFlowAI.Services
         private const string Model = "models/gemini-1.5-flash";
         private const string ApiVersion = "v1beta";
 
-        public GeminiService(IConfiguration configuration, ILogger<GeminiService> logger)
+        public GeminiService(ILogger<GeminiService> logger)
         {
-            _apiKey = configuration["Gemini:ApiKey"] ?? throw new ArgumentNullException(nameof(configuration), "Gemini API key not found");
             _logger = logger;
-
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://generativelanguage.googleapis.com/")
             };
+        }
+
+        private string GetNextApiKey()
+        {
+            lock (_keyLock)
+            {
+                _currentKeyIndex = (_currentKeyIndex + 1) % _apiKeys.Count;
+                return _apiKeys[_currentKeyIndex];
+            }
+        }
+
+        private string GetCurrentApiKey()
+        {
+            return _apiKeys[_currentKeyIndex];
         }
 
         public async Task<string> GenerateDFD(string systemDescription)
@@ -919,98 +938,124 @@ System description: " + systemDescription;
 
         private async Task<string> MakeGeminiRequest(string prompt)
         {
-            try
+            int retryCount = 0;
+            const int maxRetries = 3;
+
+            while (retryCount < maxRetries)
             {
-                var requestBody = new
+                try
                 {
-                    contents = new[]
+                    var requestBody = new
                     {
-                        new
+                        contents = new[]
                         {
-                            parts = new[]
+                            new
                             {
-                                new
+                                parts = new[]
                                 {
-                                    text = prompt
+                                    new
+                                    {
+                                        text = prompt
+                                    }
                                 }
                             }
+                        },
+                        generationConfig = new
+                        {
+                            temperature = 0.1,
+                            topP = 0.1,
+                            topK = 16,
+                            maxOutputTokens = 2048
                         }
-                    },
-                    generationConfig = new
+                    };
+
+                    var currentKey = GetCurrentApiKey();
+                    var url = $"{ApiVersion}/{Model}:generateContent?key={currentKey}";
+                    _logger.LogInformation("Sending request to Gemini API");
+
+                    var content = new StringContent(
+                        JsonSerializer.Serialize(requestBody),
+                        System.Text.Encoding.UTF8,
+                        "application/json"
+                    );
+
+                    var response = await _httpClient.PostAsync(url, content);
+                    var responseContent = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
                     {
-                        temperature = 0.1,
-                        topP = 0.1,
-                        topK = 16,
-                        maxOutputTokens = 2048
+                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests ||
+                            responseContent.Contains("quota") ||
+                            responseContent.Contains("rate limit"))
+                        {
+                            _logger.LogWarning("API key quota exceeded, rotating to next key");
+                            GetNextApiKey();
+                            retryCount++;
+                            continue;
+                        }
+
+                        _logger.LogError("Gemini API error: {Response}", responseContent);
+                        throw new Exception($"Gemini API error: {responseContent}");
                     }
-                };
 
-                var url = $"{ApiVersion}/{Model}:generateContent?key={_apiKey}";
-                _logger.LogInformation("Sending request to Gemini API");
+                    _logger.LogInformation("Received successful response from Gemini API");
 
-                var content = new StringContent(
-                    JsonSerializer.Serialize(requestBody),
-                    System.Text.Encoding.UTF8,
-                    "application/json"
-                );
+                    var json = JsonSerializer.Deserialize<JsonElement>(responseContent);
+                    var text = json
+                        .GetProperty("candidates")[0]
+                        .GetProperty("content")
+                        .GetProperty("parts")[0]
+                        .GetProperty("text")
+                        .GetString();
 
-                var response = await _httpClient.PostAsync(url, content);
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("Gemini API error: {Response}", responseContent);
-                    throw new Exception($"Gemini API error: {responseContent}");
-                }
-
-                _logger.LogInformation("Received successful response from Gemini API");
-
-                var json = JsonSerializer.Deserialize<JsonElement>(responseContent);
-                var text = json
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString();
-
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    throw new Exception("Gemini response was empty or invalid.");
-                }
-
-                // Clean up the response
-                text = text
-                    .Replace("\\n", "\n")
-                    .Replace("\\\"", "\"")
-                    .Replace("```json", "")
-                    .Replace("```", "")
-                    .Trim();
-
-                // Validate JSON if it looks like JSON
-                if (text.StartsWith("{"))
-                {
-                    try
+                    if (string.IsNullOrWhiteSpace(text))
                     {
-                        using var doc = JsonDocument.Parse(text);
-                        return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions 
-                        { 
-                            WriteIndented = true 
-                        });
+                        throw new Exception("Gemini response was empty or invalid.");
                     }
-                    catch (JsonException)
-                    {
-                        _logger.LogWarning("Invalid JSON response, retrying with modified prompt");
-                        return await MakeGeminiRequest(prompt + "\n\nIMPORTANT: Return ONLY valid JSON without any additional text or formatting.");
-                    }
-                }
 
-                return text;
+                    // Clean up the response
+                    text = text
+                        .Replace("\\n", "\n")
+                        .Replace("\\\"", "\"")
+                        .Replace("```json", "")
+                        .Replace("```", "")
+                        .Trim();
+
+                    // Validate JSON if it looks like JSON
+                    if (text.StartsWith("{"))
+                    {
+                        try
+                        {
+                            using var doc = JsonDocument.Parse(text);
+                            return JsonSerializer.Serialize(doc.RootElement, new JsonSerializerOptions 
+                            { 
+                                WriteIndented = true 
+                            });
+                        }
+                        catch (JsonException)
+                        {
+                            _logger.LogWarning("Invalid JSON response, retrying with modified prompt");
+                            return await MakeGeminiRequest(prompt + "\n\nIMPORTANT: Return ONLY valid JSON without any additional text or formatting.");
+                        }
+                    }
+
+                    return text;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception during Gemini API request");
+                    if (retryCount < maxRetries - 1)
+                    {
+                        _logger.LogInformation("Retrying with next API key");
+                        GetNextApiKey();
+                        retryCount++;
+                        continue;
+                    }
+                    throw;
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Exception during Gemini API request");
-                throw;
-            }
+
+            throw new Exception("All API keys exhausted or maximum retries reached");
         }
     }
 }
