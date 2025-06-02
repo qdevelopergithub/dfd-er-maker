@@ -975,7 +975,7 @@ System description: " + systemDescription;
 
                     var content = new StringContent(
                         JsonSerializer.Serialize(requestBody),
-                        System.Text.Encoding.UTF8,
+                        System.Text.Encoding.UTF8, 
                         "application/json"
                     );
 
